@@ -2,11 +2,11 @@
 
 Raw Input | Test Strip Detection
 --- | ---
-![](https://github.com/Huntler/AquariumTestStripAnalyzer/images/detection_example.jpg) | ![](https://github.com/Huntler/AquariumTestStripAnalyzer/images/raw_example.jpg)
+![](https://github.com/Huntler/AquariumTestStripAnalyzer/blob/master/images/detection_example.jpg) | ![](https://github.com/Huntler/AquariumTestStripAnalyzer/blob/master/images/raw_example.jpg)
 
 Color Extraction | Test Strip Detection
 --- | ---
-![](https://github.com/Huntler/AquariumTestStripAnalyzer/images/extraction_example.jpg) | Reference image of colors -> values required to return measurements
+![](https://github.com/Huntler/AquariumTestStripAnalyzer/blob/master/images/extraction_example.jpg) | Reference image of colors -> values required to return measurements
 
 ## Exection (WIP)
 The software requires Python 3, OpenCV 4, and NumPy to run. Type the follwing command to exectute the code:
