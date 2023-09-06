@@ -2,7 +2,7 @@
 
 Raw Input | Test Strip Detection
 --- | ---
-![](https://github.com/Huntler/AquariumTestStripAnalyzer/blob/master/images/detection_example.jpg) | ![](https://github.com/Huntler/AquariumTestStripAnalyzer/blob/master/images/raw_example.jpg)
+![](https://github.com/Huntler/AquariumTestStripAnalyzer/blob/master/images/raw_example.JPG) | ![](https://github.com/Huntler/AquariumTestStripAnalyzer/blob/master/images/detection_example.jpg)
 
 Color Extraction | Test Strip Detection
 --- | ---
