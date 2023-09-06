@@ -93,6 +93,15 @@ def locate_strip(image: np.array, edges: np.array, padding: int = 0) -> np.array
     return rotated_extracted_region
 
 
+def white_balance(image: np.array) -> np.array:
+    patch = image[image.shape[0] - 100:, :]
+    color = patch.mean(axis=(0, 1))
+    if (color == 0).any():
+        return image
+    
+    return (image * 1.0 / color * 255).clip(0, 255)
+
+
 def strip_pipeline(image_path: str, save_intermediates: bool = False) -> np.array:
     image_name = os.path.splitext(os.path.basename(image_path))[0]
     output_dir = f"./data/strips/{image_name}"
@@ -124,12 +133,13 @@ def strip_pipeline(image_path: str, save_intermediates: bool = False) -> np.arra
     save(extracted_strip, "extracted")
 
     # 4. Analyze the white color to perform a white balance
-    # TODO: white balance
+    color_balanced = white_balance(extracted_strip)
+    save(color_balanced, "balance")
 
     # 5. extract the 9 color patches
     # TODO: detect colored patches
 
-    return extracted_strip
+    return color_balanced
 
 
 def save_image(
