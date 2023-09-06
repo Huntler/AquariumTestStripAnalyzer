@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import List, Tuple
 import cv2
 import numpy as np
 import os
@@ -37,17 +37,17 @@ def detect_edges(image: np.array) -> Tuple[np.array, int]:
 
     # Post-process edges
     # Morph: Dialate
-    dialate_param = 50
+    dilate_param = 50
     iterations = 4
-    kernel = np.ones((dialate_param, dialate_param), np.uint8)
+    kernel = np.ones((dilate_param, dilate_param), np.uint8)
     noise_reduced = cv2.morphologyEx(
         canny, cv2.MORPH_DILATE, kernel, iterations=iterations
     )
 
-    return noise_reduced, (dialate_param * iterations) // 2
+    return noise_reduced, (dilate_param * iterations) // 2
 
 
-def locate_strip(image: np.array, edges: np.array, padding: int = 0) -> np.array:
+def extract_test_strip(image: np.array, edges: np.array, padding: int = 0) -> np.array:
     # Get contours of the image (given edges)
     contours = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     contours = contours[0] if len(contours) == 2 else contours[1]
@@ -93,13 +93,77 @@ def locate_strip(image: np.array, edges: np.array, padding: int = 0) -> np.array
     return rotated_extracted_region
 
 
-def white_balance(image: np.array) -> np.array:
-    patch = image[image.shape[0] - 100:, :]
-    color = patch.mean(axis=(0, 1))
-    if (color == 0).any():
+def white_balance(image: np.array, value: List = None) -> np.array:
+    if value is None:
+        patch = image[image.shape[0] - 100 :, :]
+        value = patch.mean(axis=(0, 1))
+        if (value == 0).any():
+            return image, None
+
+    value = np.array(value)
+    return (image * 1.0 / value * 255).clip(0, 255).astype(np.intp), value
+
+
+def apply_white_balance(image: np.array, value: List) -> np.array:
+    if value is None:
+        print("Warning: No white-balance applied.")
         return image
     
-    return (image * 1.0 / color * 255).clip(0, 255)
+    value = np.array(value)
+    return (image * 1.0 / value * 255).clip(0, 255).astype(np.intp)
+
+
+def extract_color_patches(image: np.array) -> Tuple[np.array, List]:
+    original_image = image.copy()
+    
+    image = improve_contrast(image)
+
+    hist,bins = np.histogram(image.flatten(),256,[0,256])
+    cdf = hist.cumsum()
+    cdf_normalized = cdf * float(hist.max()) / cdf.max()
+
+    cdf_m = np.ma.masked_equal(cdf,0)
+    cdf_m = (cdf_m - cdf_m.min())*255/(cdf_m.max()-cdf_m.min())
+    cdf = np.ma.filled(cdf_m,0).astype('uint8')
+
+    image = cdf[image]
+
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    image = cv2.GaussianBlur(image, (5, 5), 3)
+    _, image = cv2.threshold(image, 127, 255, cv2.THRESH_TOZERO_INV)
+
+    patch_region_marker = -1
+    i, j = 0, 0
+    patches = []
+    result_image = original_image.copy()
+    for y in range(image.shape[0]):
+        if np.mean(image[y, :]) > 10 and patch_region_marker == -1:
+            patch_region_marker = y
+            result_image[y, :, :] = np.repeat([[0, 255, 0]], result_image.shape[1], axis=0)
+        
+        if np.mean(image[y, :]) < 10 and patch_region_marker != -1:
+            if y - patch_region_marker < 0.8 * original_image.shape[1]:
+                patch_region_marker = -1
+                continue
+            
+            result_image[y, :, :] = np.repeat([[0, 0, 255]], result_image.shape[1], axis=0)        
+            patch = original_image[patch_region_marker:y, :, :]
+
+            patch[:, :, 0] = np.mean(patch[:, :, 0])
+            patch[:, :, 1] = np.mean(patch[:, :, 1])
+            patch[:, :, 2] = np.mean(patch[:, :, 2])
+            
+            patches.append((patch, patch[0, 0, :]))
+            patch_region_marker = -1
+        
+    # TODO: find two patch to determine a patch's size
+    # TODO: calculate the distance between two patches
+    # TODO: create the areas to look for
+    # TODO: calculate the mean color for each area / patch
+    
+    np.nan_to_num(result_image, copy=False)
+    return result_image, patches
 
 
 def strip_pipeline(image_path: str, save_intermediates: bool = False) -> np.array:
@@ -120,24 +184,33 @@ def strip_pipeline(image_path: str, save_intermediates: bool = False) -> np.arra
     # Run the pipeline
     # 1. Pre-process the image
     pre_processed = pre_process(gray)
-    save(pre_processed, "pre")
+    save(pre_processed, "0_pre")
 
     # 2. Find edges
     edges, offset = detect_edges(pre_processed)
-    save(edges, "edges")
+    save(edges, "1_edges")
 
     # 3. Extract the strip only
     # add gaussian kernel, morph:open, and morph:dialate to the offset (7 + 12 + 5 = 24)
     offset += 24
-    extracted_strip = locate_strip(image, edges, padding=offset)
-    save(extracted_strip, "extracted")
+    extracted_strip = extract_test_strip(image, edges, padding=offset)
+    save(extracted_strip, "2_extracted")
 
     # 4. Analyze the white color to perform a white balance
-    color_balanced = white_balance(extracted_strip)
-    save(color_balanced, "balance")
+    color_balanced, white_value = white_balance(extracted_strip)
+    save(color_balanced, "3_balance")
 
     # 5. extract the 9 color patches
-    # TODO: detect colored patches
+    color_patches, color_values = extract_color_patches(extracted_strip)
+    color_patches = apply_white_balance(color_patches, white_value)
+    save(color_patches, "4_patch_detection")
+    if len(color_values) != 0:
+        result_image = np.zeros(shape=(450, 50, 3), dtype=np.intp)
+        for i, (patch, color) in enumerate(color_values):
+            balanced_color = apply_white_balance(patch[0], white_value)[0]
+            result_image[i * 50:, :] = balanced_color
+        
+        save(result_image, "5_result")
 
     return color_balanced
 
