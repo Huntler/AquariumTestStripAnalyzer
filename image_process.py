@@ -18,15 +18,15 @@ def pre_process(image: np.array) -> np.array:
         cv2.MORPH_CLOSE,
         kernel,
         anchor=(-1, -1),
-        iterations=2,
+        iterations=8,
         borderType=cv2.BORDER_CONSTANT,
     )
-    morphed = cv2.morphologyEx(morphed, cv2.MORPH_OPEN, kernel)
+    morphed = cv2.morphologyEx(morphed, cv2.MORPH_OPEN, kernel, iterations=4)
 
     # Morph: Dialate
     dialate_param = 5
     kernel = np.ones((dialate_param, dialate_param), np.uint8)
-    noise_reduced = cv2.morphologyEx(morphed, cv2.MORPH_DILATE, kernel)
+    noise_reduced = cv2.morphologyEx(morphed, cv2.MORPH_ERODE, kernel)
 
     return noise_reduced
 
@@ -108,31 +108,33 @@ def apply_white_balance(image: np.array, value: List) -> np.array:
     if value is None:
         print("Warning: No white-balance applied.")
         return image
-    
+
     value = np.array(value)
     return (image * 1.0 / value * 255).clip(0, 255).astype(np.intp)
 
 
 def extract_color_patches(image: np.array) -> Tuple[np.array, List]:
+    # 1. Store a copy of the original image and improve the contrast to highlight the colors
     original_image = image.copy()
-    
     image = improve_contrast(image)
 
-    hist,bins = np.histogram(image.flatten(),256,[0,256])
+    # 2. Equalize the hisotgram to highlight the colors
+    hist, bins = np.histogram(image.flatten(), 256, [0, 256])
     cdf = hist.cumsum()
     cdf_normalized = cdf * float(hist.max()) / cdf.max()
 
-    cdf_m = np.ma.masked_equal(cdf,0)
-    cdf_m = (cdf_m - cdf_m.min())*255/(cdf_m.max()-cdf_m.min())
-    cdf = np.ma.filled(cdf_m,0).astype('uint8')
-
+    cdf_m = np.ma.masked_equal(cdf, 0)
+    cdf_m = (cdf_m - cdf_m.min()) * 255 / (cdf_m.max() - cdf_m.min())
+    cdf = np.ma.filled(cdf_m, 0).astype("uint8")
     image = cdf[image]
 
+    # 3. Find edges to extract the color patches only
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     image = cv2.GaussianBlur(image, (5, 5), 3)
     _, image = cv2.threshold(image, 127, 255, cv2.THRESH_TOZERO_INV)
 
+    # 4. Go over the image and extract the color patches
     patch_region_marker = -1
     i, j = 0, 0
     patches = []
@@ -140,28 +142,27 @@ def extract_color_patches(image: np.array) -> Tuple[np.array, List]:
     for y in range(image.shape[0]):
         if np.mean(image[y, :]) > 10 and patch_region_marker == -1:
             patch_region_marker = y
-            result_image[y, :, :] = np.repeat([[0, 255, 0]], result_image.shape[1], axis=0)
-        
+            result_image[y, :, :] = np.repeat(
+                [[0, 255, 0]], result_image.shape[1], axis=0
+            )
+
         if np.mean(image[y, :]) < 10 and patch_region_marker != -1:
             if y - patch_region_marker < 0.8 * original_image.shape[1]:
                 patch_region_marker = -1
                 continue
-            
-            result_image[y, :, :] = np.repeat([[0, 0, 255]], result_image.shape[1], axis=0)        
+
+            result_image[y, :, :] = np.repeat(
+                [[0, 0, 255]], result_image.shape[1], axis=0
+            )
             patch = original_image[patch_region_marker:y, :, :]
 
             patch[:, :, 0] = np.mean(patch[:, :, 0])
             patch[:, :, 1] = np.mean(patch[:, :, 1])
             patch[:, :, 2] = np.mean(patch[:, :, 2])
-            
+
             patches.append((patch, patch[0, 0, :]))
             patch_region_marker = -1
-        
-    # TODO: find two patch to determine a patch's size
-    # TODO: calculate the distance between two patches
-    # TODO: create the areas to look for
-    # TODO: calculate the mean color for each area / patch
-    
+
     np.nan_to_num(result_image, copy=False)
     return result_image, patches
 
@@ -208,8 +209,8 @@ def strip_pipeline(image_path: str, save_intermediates: bool = False) -> np.arra
         result_image = np.zeros(shape=(450, 50, 3), dtype=np.intp)
         for i, (patch, color) in enumerate(color_values):
             balanced_color = apply_white_balance(patch[0], white_value)[0]
-            result_image[i * 50:, :] = balanced_color
-        
+            result_image[i * 50 :, :] = balanced_color
+
         save(result_image, "5_result")
 
     return color_balanced
