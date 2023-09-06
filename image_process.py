@@ -66,7 +66,7 @@ def extract_test_strip(image: np.array, edges: np.array, padding: int = 0) -> np
     box = np.intp(box)
 
     img = image.copy()
-    cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
+    cv2.drawContours(img, [box], 0, (0, 255, 0), 8)
 
     # Clip the box
     box[:, 0] = np.clip(box[:, 0], 0, image.shape[0])
@@ -80,8 +80,11 @@ def extract_test_strip(image: np.array, edges: np.array, padding: int = 0) -> np
     extracted_region = image[min_y:max_y, min_x:max_x]
 
     # Rotate the extracted region to align it with the horizontal axis
-    angle = rot_rect[2] if rot_rect[2] < 45 else rot_rect[2] - 90
-    angle = rot_rect[2] if rot_rect[2] > -45 else rot_rect[2] + 90
+    angle = rot_rect[2]
+    if angle > 45:
+        angle -= 90
+    elif angle < -45:
+        angle += 90
     
     rotated_extracted_region = cv2.warpAffine(
         extracted_region,
@@ -209,12 +212,11 @@ def strip_pipeline(image_path: str, save_intermediates: bool = False) -> np.arra
 
     # 5. extract the 9 color patches
     color_patches, color_values = extract_color_patches(extracted_strip)
-    color_patches = apply_white_balance(color_patches, white_value)
     save(color_patches, "4_patch_detection")
 
     balanced_colors = []
+    result_image = np.zeros(shape=(450, 50, 3), dtype=np.intp)
     if len(color_values) != 0:
-        result_image = np.zeros(shape=(450, 50, 3), dtype=np.intp)
         for i, (patch, color) in enumerate(color_values):
             balanced_color = apply_white_balance(patch[0], white_value)[0]
             result_image[i * 50 :, :] = balanced_color
