@@ -205,15 +205,18 @@ def strip_pipeline(image_path: str, save_intermediates: bool = False) -> np.arra
     color_patches, color_values = extract_color_patches(extracted_strip)
     color_patches = apply_white_balance(color_patches, white_value)
     save(color_patches, "4_patch_detection")
+
+    balanced_colors = []
     if len(color_values) != 0:
         result_image = np.zeros(shape=(450, 50, 3), dtype=np.intp)
         for i, (patch, color) in enumerate(color_values):
             balanced_color = apply_white_balance(patch[0], white_value)[0]
             result_image[i * 50 :, :] = balanced_color
+            balanced_colors.append(balanced_color)
 
         save(result_image, "5_result")
 
-    return color_balanced
+    return balanced_colors, result_image
 
 
 def save_image(

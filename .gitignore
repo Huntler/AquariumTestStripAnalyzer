@@ -1,3 +1,5 @@
 data/raw_input/*
 data/strips/*
 data/reference/*
+
+__pycache__/*
