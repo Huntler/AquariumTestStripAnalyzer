@@ -65,6 +65,9 @@ def extract_test_strip(image: np.array, edges: np.array, padding: int = 0) -> np
     box = cv2.boxPoints(rot_rect)
     box = np.intp(box)
 
+    img = image.copy()
+    cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
+
     # Clip the box
     box[:, 0] = np.clip(box[:, 0], 0, image.shape[0])
     box[:, 1] = np.clip(box[:, 1], 0, image.shape[1])
@@ -77,7 +80,9 @@ def extract_test_strip(image: np.array, edges: np.array, padding: int = 0) -> np
     extracted_region = image[min_y:max_y, min_x:max_x]
 
     # Rotate the extracted region to align it with the horizontal axis
+    angle = rot_rect[2] if rot_rect[2] < 45 else rot_rect[2] - 90
     angle = rot_rect[2] if rot_rect[2] > -45 else rot_rect[2] + 90
+    
     rotated_extracted_region = cv2.warpAffine(
         extracted_region,
         cv2.getRotationMatrix2D(
@@ -88,9 +93,9 @@ def extract_test_strip(image: np.array, edges: np.array, padding: int = 0) -> np
 
     # Apply the padding if given
     if padding > 0:
-        return rotated_extracted_region[padding:-padding, padding:-padding]
+        return rotated_extracted_region[padding:-padding, padding:-padding], img
 
-    return rotated_extracted_region
+    return rotated_extracted_region, img
 
 
 def white_balance(image: np.array, value: List = None) -> np.array:
@@ -194,7 +199,8 @@ def strip_pipeline(image_path: str, save_intermediates: bool = False) -> np.arra
     # 3. Extract the strip only
     # add gaussian kernel, morph:open, and morph:dialate to the offset (7 + 12 + 5 = 24)
     offset += 24
-    extracted_strip = extract_test_strip(image, edges, padding=offset)
+    extracted_strip, detection = extract_test_strip(image, edges, padding=offset)
+    save(detection, "2_1_detection")
     save(extracted_strip, "2_extracted")
 
     # 4. Analyze the white color to perform a white balance
@@ -258,7 +264,8 @@ if __name__ == "__main__":
     output_dir = "./data/strips/"
 
     # Find the strip and remove the background
-    image_path = "./data/raw_input/"
-    for file in os.listdir(image_path):
-        file_path = image_path + file
-        strip_pipeline(file_path, save_intermediates=True)
+    image_path = "./data/raw_input/IMG_3193.JPG"
+    strip_pipeline(image_path, save_intermediates=True)
+
+    image_path = "./data/raw_input/IMG_3196.JPG"
+    strip_pipeline(image_path, save_intermediates=True)
