@@ -6,7 +6,20 @@ Raw Input | Test Strip Detection | Color Extraction
 
 Console output:
 
-```{'good': {'iron': [0, 'mg/L'], 'copper': [0, 'mg/L'], 'nitrate': [25, 'mg/L'], 'nitrite': [0, 'mg/L'], 'chlorine': [0.0, 'mg/L'], 'GH': [2.5, '°dH'], 'alkalinity': [40, 'mg/L'], 'KH': [4.0, '°dH'], 'pH': [7.8, 'None']}, 'low': {}, 'high': {}}```
+```
+good
+  iron        0 mg/L
+  copper      0 mg/L
+  nitrate     25 mg/L
+  nitrite     0 mg/L
+  chlorine    0.0 mg/L
+  GH          2.5 °dH
+  alkalinity  40 mg/L
+  KH          4.0 °dH
+  pH          7.8 None
+low
+high
+```
 
 ## Image Processing Pipeline
 - Initial image

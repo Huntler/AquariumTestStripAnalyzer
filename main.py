@@ -8,6 +8,16 @@ reference_folder = "reference/"
 debugging_folder = "debugging/"
 
 
+def pretty(d, indent=0):
+    for key, value in d.items():
+        if isinstance(value, dict):
+            print('\t' * indent + str(key))
+            pretty(value, indent+1)
+        else:
+            indents = min(2 - len(key) // 4 + 1, 2)
+            print('\t' * indent + str(key) + '\t' * indents + str(value[0]) + " " + str(value[1]))
+
+
 parser = argparse.ArgumentParser(
     prog="Aquarium Test-Strip Analyzer (ATSA)",
     description="The program extracts a water quality test strip of an image, performs white balancing, and compares the color values to a reference table.",
@@ -75,4 +85,4 @@ strip = TestStrip(args.input, debugging_path=store_pipeline)
 table = ReferenceTable(path=args.reference_table)
 water_quality = table.analyze_strip(strip)
 
-print(water_quality)
+pretty(water_quality)
