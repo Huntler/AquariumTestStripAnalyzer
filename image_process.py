@@ -122,11 +122,20 @@ def apply_white_balance(image: np.array, value: List) -> np.array:
 
 
 def extract_color_patches(image: np.array) -> Tuple[np.array, List]:
+    patch_start_threshold = 200
+    patch_end_threshold = 150
+    algorithm_start_offset = 0.05
+
     # 1. Store a copy of the original image and improve the contrast to highlight the colors
     original_image = image.copy()
     image = improve_contrast(image)
 
-    # 2. Equalize the hisotgram to highlight the colors
+    # 2. drop unnecessary data of horizontal information
+    vertical_img = image[:, image.shape[1] // 2, :]
+    vertical_img = vertical_img[:, np.newaxis, :]
+    image = np.repeat(vertical_img, image.shape[1], axis=1)
+
+    # 3. Equalize the hisotgram to highlight the colors
     hist, bins = np.histogram(image.flatten(), 256, [0, 256])
     cdf = hist.cumsum()
     cdf_normalized = cdf * float(hist.max()) / cdf.max()
@@ -136,43 +145,91 @@ def extract_color_patches(image: np.array) -> Tuple[np.array, List]:
     cdf = np.ma.filled(cdf_m, 0).astype("uint8")
     image = cdf[image]
 
-    # 3. Find edges to extract the color patches only
+    # 4. Find edges to extract the color patches only
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    kernel = np.ones((12, 12), np.uint8)
+    image = cv2.morphologyEx(
+        image,
+        cv2.MORPH_CLOSE,
+        kernel,
+        anchor=(-1, -1),
+        iterations=8,
+        borderType=cv2.BORDER_CONSTANT,
+    )
+    image = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel, iterations=4)
 
-    image = cv2.GaussianBlur(image, (5, 5), 3)
-    _, image = cv2.threshold(image, 127, 255, cv2.THRESH_TOZERO_INV)
+    kernel = np.ones((5, 5), np.uint8)
+    image = cv2.morphologyEx(image, cv2.MORPH_ERODE, kernel)
+    image = 255 - image
+
+    image_search = image.copy()
 
     # 4. Go over the image and extract the color patches
-    patch_region_marker = -1
-    i, j = 0, 0
+    patch_start = -1
     patches = []
     result_image = original_image.copy()
-    for y in range(image.shape[0]):
-        if np.mean(image[y, :]) > 10 and patch_region_marker == -1:
-            patch_region_marker = y
+
+    # detect the first two patches which help finding all patches afterward
+    # note: the assumption here is, that all test-patch are sized and placed equally!
+    offset = int(image.shape[0] * algorithm_start_offset)
+    for y in range(image.shape[0] - offset, 0, -1):
+        # detect start of first patch
+        if np.mean(image[y, :]) > patch_start_threshold and patch_start == -1:
+            patch_start = y
             result_image[y, :, :] = np.repeat(
                 [[0, 255, 0]], result_image.shape[1], axis=0
             )
-
-        if np.mean(image[y, :]) < 10 and patch_region_marker != -1:
-            if y - patch_region_marker < 0.8 * original_image.shape[1]:
-                patch_region_marker = -1
-                continue
-
+        
+        # detect end of first patch
+        if np.mean(image[y, :]) < patch_end_threshold and patch_start != -1:
             result_image[y, :, :] = np.repeat(
                 [[0, 0, 255]], result_image.shape[1], axis=0
             )
-            patch = original_image[patch_region_marker:y, :, :]
 
-            patch[:, :, 0] = np.mean(patch[:, :, 0])
-            patch[:, :, 1] = np.mean(patch[:, :, 1])
-            patch[:, :, 2] = np.mean(patch[:, :, 2])
+            center = patch_start - ((patch_start - y) // 2)
+            result_image[center, :, :] = np.repeat(
+                [[255, 0, 0]], result_image.shape[1], axis=0
+            )
 
-            patches.append((patch, patch[0, 0, :]))
-            patch_region_marker = -1
+            patches.append([patch_start, y, center])
+            patch_start = -1
+        
+        # end loop if first patch was detected
+        if len(patches) == 2:
+            break
+    
+    # calculate the distance between ptaches and the average patch size
+    patch_distance = patches[0][2] - patches[1][2]
+    avg_patch_height = (patches[0][0] - patches[0][1] + patches[1][0] - patches[1][1]) // 2
+    
+    # get all patches
+    patch_start = patches[0][2]
+    patches = []
+    for i in range(9):
+        y = patch_start - patch_distance * i
+        start = y + avg_patch_height // 2
+        end = y - avg_patch_height // 2
+
+        # adding lines to debug
+        result_image[y, :, :] = np.repeat(
+            [[255, 0, 0]], result_image.shape[1], axis=0
+        )
+        result_image[start, :, :] = np.repeat(
+            [[0, 255, 0]], result_image.shape[1], axis=0
+        )
+        if end > 0:
+            result_image[end, :, :] = np.repeat(
+                [[0, 0, 255]], result_image.shape[1], axis=0
+            )
+
+        # get the mean-color
+        # TODO: background color to NAN
+        # TODO: enlarge the mean-area
+        mean_color = np.nanmean(original_image[y, :, :], axis=0)
+        patches.insert(0, mean_color)
 
     np.nan_to_num(result_image, copy=False)
-    return result_image, patches
+    return result_image, image_search, patches
 
 
 def strip_pipeline(image_path: str, debugging_path: str = None) -> np.array:
@@ -210,14 +267,15 @@ def strip_pipeline(image_path: str, debugging_path: str = None) -> np.array:
     save(color_balanced, "3_balance")
 
     # 5. extract the 9 color patches
-    color_patches, color_values = extract_color_patches(extracted_strip)
-    save(color_patches, "4_patch_detection")
+    color_patches, image_search, color_values = extract_color_patches(extracted_strip)
+    save(color_patches, "4_2_patch_detection")
+    save(image_search, "4_1_patch_detection")
 
     balanced_colors = []
     result_image = np.zeros(shape=(450, 50, 3), dtype=np.intp)
     if len(color_values) != 0:
-        for i, (patch, color) in enumerate(color_values):
-            balanced_color = apply_white_balance(patch[0], white_value)[0]
+        for i, color in enumerate(color_values):
+            balanced_color = apply_white_balance(np.array([color]), white_value)[0]
             result_image[i * 50 :, :] = balanced_color
             balanced_colors.append(balanced_color)
 
