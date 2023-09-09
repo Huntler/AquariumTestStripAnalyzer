@@ -41,12 +41,3 @@ class ReferenceTable:
             result[key] = values[closest_idx]
 
         return result
-
-
-if __name__ == "__main__":
-    table = ReferenceTable()
-    strip = TestStrip("data/raw_input/IMG_3193.JPG")
-    strip.save_result("data/strips/3193_result.JPG")
-    
-    result = table.analyze_strip(strip)
-    print(result)

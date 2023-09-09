@@ -260,14 +260,3 @@ def improve_contrast(image: np.array) -> np.array:
     # Converting image from LAB Color model to BGR color spcae
     enhanced_img = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
     return enhanced_img
-
-
-if __name__ == "__main__":
-    output_dir = "./data/strips/"
-
-    # Find the strip and remove the background
-    image_path = "./data/raw_input/IMG_3193.JPG"
-    strip_pipeline(image_path, save_intermediates=True)
-
-    image_path = "./data/raw_input/IMG_3196.JPG"
-    strip_pipeline(image_path, save_intermediates=True)
