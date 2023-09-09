@@ -69,10 +69,8 @@ def extract_test_strip(image: np.array, edges: np.array, padding: int = 0) -> np
     cv2.drawContours(image_contours, [box], 0, (0, 255, 0), 8)
 
     # Clip the box
-    print(box)
     box[:, 0] = np.clip(box[:, 0], 0, image.shape[1])
     box[:, 1] = np.clip(box[:, 1], 0, image.shape[0])
-    print(box)
 
     # Extract the rectangle and perform perspective transformation
     min_x = np.min(box[:, 0])
