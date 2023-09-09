@@ -55,9 +55,14 @@ if (
 # check if debugging folder structure exists
 store_pipeline = None
 if args.store_pipeline:
-    os.mkdir(f"{data_folder}{debugging_folder}")
+    if not os.path.exists(f"{data_folder}{debugging_folder}"):
+        os.mkdir(f"{data_folder}{debugging_folder}")
+
     input_file_name = os.path.splitext(os.path.basename(args.input))[0]
     store_pipeline = f"{data_folder}{debugging_folder}{input_file_name}/"
+
+    if os.path.exists(store_pipeline):
+        os.rmdir(store_pipeline)
     os.mkdir(store_pipeline)
 
 # read the test strip
