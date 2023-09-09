@@ -62,6 +62,9 @@ if args.store_pipeline:
     store_pipeline = f"{data_folder}{debugging_folder}{input_file_name}/"
 
     if os.path.exists(store_pipeline):
+        content = os.listdir(store_pipeline)
+        if len(content) > 0:
+            [os.remove(f"{store_pipeline}{file}") for file in content]
         os.rmdir(store_pipeline)
     os.mkdir(store_pipeline)
 

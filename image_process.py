@@ -65,12 +65,14 @@ def extract_test_strip(image: np.array, edges: np.array, padding: int = 0) -> np
     box = cv2.boxPoints(rot_rect)
     box = np.intp(box)
 
-    img = image.copy()
-    cv2.drawContours(img, [box], 0, (0, 255, 0), 8)
+    image_contours = image.copy()
+    cv2.drawContours(image_contours, [box], 0, (0, 255, 0), 8)
 
     # Clip the box
-    box[:, 0] = np.clip(box[:, 0], 0, image.shape[0])
-    box[:, 1] = np.clip(box[:, 1], 0, image.shape[1])
+    print(box)
+    box[:, 0] = np.clip(box[:, 0], 0, image.shape[1])
+    box[:, 1] = np.clip(box[:, 1], 0, image.shape[0])
+    print(box)
 
     # Extract the rectangle and perform perspective transformation
     min_x = np.min(box[:, 0])
@@ -96,9 +98,9 @@ def extract_test_strip(image: np.array, edges: np.array, padding: int = 0) -> np
 
     # Apply the padding if given
     if padding > 0:
-        return rotated_extracted_region[padding:-padding, padding:-padding], img
+        return rotated_extracted_region[padding:-padding, padding:-padding], image_contours
 
-    return rotated_extracted_region, img
+    return rotated_extracted_region, image_contours
 
 
 def white_balance(image: np.array, value: List = None) -> np.array:
