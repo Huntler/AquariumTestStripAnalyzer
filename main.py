@@ -66,7 +66,7 @@ if args.store_pipeline:
     os.mkdir(store_pipeline)
 
 # read the test strip
-strip = TestStrip(args.input)
+strip = TestStrip(args.input, debugging_path=store_pipeline)
 
 # read the reference table
 table = ReferenceTable(path=args.reference_table)

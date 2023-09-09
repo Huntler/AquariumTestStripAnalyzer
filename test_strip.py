@@ -4,8 +4,8 @@ from image_process import strip_pipeline
 
 
 class TestStrip:
-    def __init__(self, path: str) -> None:
-        self._values, self._image = strip_pipeline(path)
+    def __init__(self, path: str, debugging_path: str = None) -> None:
+        self._values, self._image = strip_pipeline(path, debugging_path)
 
     @property
     def values(self) -> np.array:

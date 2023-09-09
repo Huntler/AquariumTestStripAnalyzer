@@ -175,12 +175,11 @@ def extract_color_patches(image: np.array) -> Tuple[np.array, List]:
     return result_image, patches
 
 
-def strip_pipeline(image_path: str, save_intermediates: bool = False) -> np.array:
+def strip_pipeline(image_path: str, debugging_path: str = None) -> np.array:
     image_name = os.path.splitext(os.path.basename(image_path))[0]
-    output_dir = f"./data/strips/{image_name}"
     save = (
-        lambda img, pre: save_image(image_name, img, pre, output_dir)
-        if save_intermediates
+        lambda img, pre: save_image(image_name, img, pre, debugging_path)
+        if debugging_path
         else 0
     )
 
