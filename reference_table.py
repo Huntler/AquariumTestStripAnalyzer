@@ -42,17 +42,39 @@ class ReferenceTable:
         b = int(b1 - b2)
 
         return (((512 + red_mean) * r * r) >> 8) + 4 * g * g + (((767 - red_mean) * b * b) >> 8)
+    
+    def _convert_hardness(self, value) -> float:
+        return 1.0 * value / 10
 
     def analyze_strip(self, strip: TestStrip) -> Dict:
-        result = {}
+        result = {"good": {}, "low": {}, "high": {}}
+
         for i, color in enumerate(strip.values):
+            # get the table's information
             key = self.KEY_NAMES[i]
             colors = np.array(self._table[key]["colors"])
             values = np.array(self._table[key]["values"])
+            valid_range = np.array(self._table[key]["valid"])
+            unit = self._table[key]["unit"]
 
+            # find the matching entry concering the test strip
             color_diff = [self._color_distance_red_mean(color, c) for c in colors]
             closest_idx = np.argmin(color_diff)
-            result[key] = values[closest_idx]
+            value = values[closest_idx]
+
+            # convert hardness
+            if key in [self.KEY_NAMES[self.KH], self.KEY_NAMES[self.GH]]:
+                value = self._convert_hardness(value)
+                valid_range = [self._convert_hardness(v) for v in valid_range]
+                unit = "°dH"
+
+            # sort quality based on valid range
+            if value < min(valid_range):
+                result["low"][key] = [value, unit]
+            elif value > max(valid_range):
+                result["high"][key] = [value, unit]
+            else:
+                result["good"][key] = [value, unit]
 
             # print(f"key={key}, color_diff={color_diff}, index={closest_idx}, values={values}, value={values[closest_idx]}\n")
 
