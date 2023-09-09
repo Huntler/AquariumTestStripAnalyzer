@@ -48,6 +48,8 @@ def detect_edges(image: np.array) -> Tuple[np.array, int]:
 
 
 def extract_test_strip(image: np.array, edges: np.array, padding: int = 0) -> np.array:
+    test_stripe_ratio = 0.042099354476564696
+
     # Get contours of the image (given edges)
     contours = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     contours = contours[0] if len(contours) == 2 else contours[1]
@@ -96,7 +98,16 @@ def extract_test_strip(image: np.array, edges: np.array, padding: int = 0) -> np
 
     # Apply the padding if given
     if padding > 0:
-        return rotated_extracted_region[padding:-padding, padding:-padding], image_contours
+        padded_region = rotated_extracted_region[padding:-padding, padding:-padding]
+
+        # check if the extracted shpae has the correct ratio
+        ratio = test_stripe_ratio / (padded_region.shape[1] / padded_region.shape[0])
+        offset = int(padded_region.shape[1] - padded_region.shape[1] * ratio) // 2
+        if offset > 0:
+            # adapt the padding, as the ratio was incorrect
+            padded_region = padded_region[:, offset:-offset]
+
+        return padded_region, image_contours
 
     return rotated_extracted_region, image_contours
 
