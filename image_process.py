@@ -135,6 +135,8 @@ def apply_white_balance(image: np.array, value: List) -> np.array:
 def extract_color_patches(image: np.array) -> Tuple[np.array, List]:
     patch_threshold = 150
     algorithm_start_offset = 0.05
+    patch_width = 0.8
+    patch_height = 0.4
 
     # 1. Store a copy of the original image and improve the contrast to highlight the colors
     original_image = image.copy()
@@ -213,6 +215,8 @@ def extract_color_patches(image: np.array) -> Tuple[np.array, List]:
     # calculate the distance between ptaches and the average patch size
     patch_distance = patches[0][2] - patches[1][2]
     avg_patch_height = (patches[0][0] - patches[0][1] + patches[1][0] - patches[1][1]) // 2
+    width = int(patch_width * result_image.shape[1])
+    height = int(patch_height * avg_patch_height) // 2
     
     # get all patches
     patch_start = patches[0][2]
@@ -235,9 +239,13 @@ def extract_color_patches(image: np.array) -> Tuple[np.array, List]:
             )
 
         # get the mean-color
-        # TODO: background color to NAN
-        # TODO: enlarge the mean-area
-        mean_color = np.nanmean(original_image[y, :, :], axis=0)
+        x1, x2 = result_image.shape[1] - width, width
+        y1, y2 = y - height, y + height
+        box = np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2]])
+        result_image = cv2.fillPoly(result_image, pts =[box], color=(255, 0, 0))
+
+        extracted = original_image[y1:y2, x1:x2, :]
+        mean_color = np.nanmean(np.nanmean(extracted, axis=0), axis=0)
         patches.insert(0, mean_color)
 
     np.nan_to_num(result_image, copy=False)
