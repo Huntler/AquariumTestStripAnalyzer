@@ -1,3 +1,4 @@
+from copy import deepcopy
 import os, json
 import numpy as np
 from typing import Dict
@@ -28,7 +29,21 @@ class ReferenceTable:
     def _load_table_from_file(self, path: str) -> Dict:
         with open(path, "rb") as file:
             text = file.read()
-            self._table = json.loads(text)
+            parsed = json.loads(text)
+            self._table = parsed["table"]
+            self._convert_table(parsed["type"])
+        
+    def _convert_table(self, _type: str) -> None:
+        new_table = deepcopy(self._table)
+        for key, sub_dict in self._table.items():
+            colors = np.array(sub_dict["colors"])
+            
+            if _type == "rgb":
+                r, g, b = colors[:, 0], colors[:, 1], colors[:, 2]
+            
+            new_table[key]["colors"] = np.array([b, g, r]).T
+        
+        self._table = new_table
 
     def _color_distance_red_mean(self, color_a, color_b) -> float:
         # method from https://www.compuphase.com/cmetric.html
@@ -61,6 +76,7 @@ class ReferenceTable:
             color_diff = [self._color_distance_red_mean(color, c) for c in colors]
             closest_idx = np.argmin(color_diff)
             value = values[closest_idx]
+            print(key, color_diff, color, colors[closest_idx], colors[1])
 
             # convert hardness
             if key in [self.KEY_NAMES[self.KH], self.KEY_NAMES[self.GH]]:
