@@ -1,6 +1,9 @@
+from copy import deepcopy
+import math
 import os, json
+import cv2
 import numpy as np
-from typing import Dict
+from typing import Dict, Tuple
 
 from test_strip import TestStrip
 
@@ -28,21 +31,65 @@ class ReferenceTable:
     def _load_table_from_file(self, path: str) -> Dict:
         with open(path, "rb") as file:
             text = file.read()
-            self._table = json.loads(text)
+            parsed = json.loads(text)
+            self._table = parsed["table"]
+            self._convert_table(parsed["type"])
+        
+    def _convert_table(self, _type: str) -> None:
+        new_table = deepcopy(self._table)
+        for key, sub_dict in self._table.items():
+            colors = np.array(sub_dict["colors"])
+            
+            if _type == "rgb":
+                r, g, b = colors[:, 0], colors[:, 1], colors[:, 2]
 
-    def _color_distance_red_mean(self, color_a, color_b) -> float:
+            hsv_converted = []
+            for i in range(len(colors)):
+                H, S, V = self._rgb_to_hsv(r[i], g[i], b[i])
+                hsv_converted.append([H, S, V])
+            
+            new_table[key]["colors"] = hsv_converted
+        
+        self._table = new_table
+    
+    def _rgb_to_hsv(self, r: int, g: int, b: int) -> Tuple[float]:
+        _r = 1.0 * r / 255
+        _g = 1.0 * g / 255
+        _b = 1.0 * b / 255
+
+        c_max = max(_r, _g, _b)
+        c_min = min(_r, _g, _b)
+
+        delta = c_max - c_min
+
+        H = 0
+        if c_max == _r:
+            H = 60 * (((_g - _b) / delta) % 6)
+        elif c_max == _g:
+            H = 60 * ((_b - _r) / delta + 2)
+        elif c_max == _b:
+            H = 60 * ((_r - _g) / delta + 4)
+
+        S = 0
+        if c_max != 0:
+            S = delta / c_max
+
+        V = c_max
+
+        return H, S, V
+
+    def _color_distance(self, color_a, reference: Tuple[float]) -> float:
         # method from https://www.compuphase.com/cmetric.html
         # image in BGR format
-        b1, g1, r1 = color_a[0], color_a[1], color_a[2]
-        b2, g2, r2 = color_b[0], color_b[1], color_b[2]
+        H1, S1, V1 = self._rgb_to_hsv(color_a[2], color_a[1], color_a[0])
+        H2, S2, V2 = reference
 
-        red_mean = int(round((r1 + r2) / 2))
-        r = int(r1 - r2)
-        g = int(g1 - g2)
-        b = int(b1 - b2)
+        hue_distance = 1.0 * min(abs(H2 - H1), 360 - abs(H2 - H1)) / 180
+        saturation_distance = abs(S2 - S1)
+        value_distance = 1.0 * abs(V2 - V1) / 255
 
-        return (((512 + red_mean) * r * r) >> 8) + 4 * g * g + (((767 - red_mean) * b * b) >> 8)
-    
+        return math.sqrt(hue_distance**2 + saturation_distance**2 + value_distance**2)
+
     def _convert_hardness(self, value) -> float:
         return 1.0 * value / 10
 
@@ -58,7 +105,7 @@ class ReferenceTable:
             unit = self._table[key]["unit"]
 
             # find the matching entry concering the test strip
-            color_diff = [self._color_distance_red_mean(color, c) for c in colors]
+            color_diff = [self._color_distance(color, c) for c in colors]
             closest_idx = np.argmin(color_diff)
             value = values[closest_idx]
 

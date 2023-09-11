@@ -133,8 +133,7 @@ def apply_white_balance(image: np.array, value: List) -> np.array:
 
 
 def extract_color_patches(image: np.array) -> Tuple[np.array, List]:
-    patch_start_threshold = 200
-    patch_end_threshold = 150
+    patch_threshold = 150
     algorithm_start_offset = 0.05
 
     # 1. Store a copy of the original image and improve the contrast to highlight the colors
@@ -172,6 +171,8 @@ def extract_color_patches(image: np.array) -> Tuple[np.array, List]:
     kernel = np.ones((5, 5), np.uint8)
     image = cv2.morphologyEx(image, cv2.MORPH_ERODE, kernel)
     image = 255 - image
+    image[image < patch_threshold] = 0
+    image[image >= patch_threshold] = 255
 
     image_search = image.copy()
 
@@ -185,14 +186,14 @@ def extract_color_patches(image: np.array) -> Tuple[np.array, List]:
     offset = int(image.shape[0] * algorithm_start_offset)
     for y in range(image.shape[0] - offset, 0, -1):
         # detect start of first patch
-        if np.mean(image[y, :]) > patch_start_threshold and patch_start == -1:
+        if np.mean(image[y, :]) > 0 and patch_start == -1:
             patch_start = y
             result_image[y, :, :] = np.repeat(
                 [[0, 255, 0]], result_image.shape[1], axis=0
             )
         
         # detect end of first patch
-        if np.mean(image[y, :]) < patch_end_threshold and patch_start != -1:
+        if np.mean(image[y, :]) < 255 and patch_start != -1:
             result_image[y, :, :] = np.repeat(
                 [[0, 0, 255]], result_image.shape[1], axis=0
             )

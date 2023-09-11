@@ -43,7 +43,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 # check if path exists and directs to a valid file
-allowed_file_types = ["jpg", "png"]
+allowed_file_types = ["jpg", "jpeg", "png"]
 if (
     not os.path.exists(args.input)
     or not os.path.isfile(args.input)
