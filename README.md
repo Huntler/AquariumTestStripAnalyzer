@@ -39,19 +39,19 @@ high
 The software requires Python 3, OpenCV 4, and NumPy to run. Type the follwing command to exectute the code:
 
 ```
-python3 main.py -i {image_path}
+python3 python/main.py -i {image_path}
 ```
 
 Debugging the processing pipeline relies on analyzing the intermediate images. Hence, run the program using `-s`
 
 ```
-python3 main.py -i {image_path} -s
+python3 python/main.py -i {image_path} -s
 ```
 
 In case there is a different reference table needed, execute the command with `-r`
 
 ```
-python3 main.py -i {image_path} -r {reference_table_path}
+python3 python/main.py -i {image_path} -r {reference_table_path}
 ```
 
 The folder default folder structure is:

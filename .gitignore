@@ -2,4 +2,4 @@ data/raw_input/*
 data/strips/*
 data/debugging/*
 
-__pycache__/*
+*/__pycache__/*
