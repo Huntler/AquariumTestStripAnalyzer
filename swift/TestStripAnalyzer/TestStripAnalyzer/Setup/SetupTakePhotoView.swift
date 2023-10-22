@@ -90,8 +90,8 @@ class SetupTakePhotoView: UIViewController, AVCapturePhotoCaptureDelegate {
         captureSession.stopRunning()
         
         let photoSettings = AVCapturePhotoSettings()
-        photoSettings.flashMode = .off
-        photoSettings.photoQualityPrioritization = .balanced
+        photoSettings.flashMode = .on
+        photoSettings.photoQualityPrioritization = .speed
         if let photoPreviewType = photoSettings.availablePreviewPhotoPixelFormatTypes.first {
             photoSettings.previewPhotoFormat = [kCVPixelBufferPixelFormatTypeKey as String: photoPreviewType]
         }
