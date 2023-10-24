@@ -79,7 +79,7 @@ class SetupTakePhotoView: UIViewController, AVCapturePhotoCaptureDelegate {
             
             captureSession.sessionPreset = .photo
             
-            
+            // start the capture session async to prevent UI blocking
             DispatchQueue.global().async {
                 self.captureSession.startRunning()
             }
@@ -89,6 +89,7 @@ class SetupTakePhotoView: UIViewController, AVCapturePhotoCaptureDelegate {
     @IBAction func capturePhoto() {
         captureSession.stopRunning()
         
+        // define photo settings
         let photoSettings = AVCapturePhotoSettings()
         photoSettings.flashMode = .on
         photoSettings.photoQualityPrioritization = .speed
@@ -96,6 +97,7 @@ class SetupTakePhotoView: UIViewController, AVCapturePhotoCaptureDelegate {
             photoSettings.previewPhotoFormat = [kCVPixelBufferPixelFormatTypeKey as String: photoPreviewType]
         }
         
+        // take a photo and delegate to 'photoOutput'
         photoOutput.capturePhoto(with: photoSettings, delegate: self)
         captureButton.isEnabled = false
     }
