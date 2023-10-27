@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DD7316702AEBF4E100DF3F4E /* SetupReferenceColorCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD73166F2AEBF4E100DF3F4E /* SetupReferenceColorCaptureView.swift */; };
 		DD8FDBA82AE548D000D33525 /* StripeDetection.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD8FDBA72AE548D000D33525 /* StripeDetection.swift */; };
 		DDAE77332AE66D0400CEAFC2 /* SetupChangeBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDAE77322AE66D0400CEAFC2 /* SetupChangeBoxView.swift */; };
 		DDFF75862AE1558D009AFD0F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDFF75852AE1558D009AFD0F /* AppDelegate.swift */; };
@@ -33,6 +34,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		DD73166F2AEBF4E100DF3F4E /* SetupReferenceColorCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupReferenceColorCaptureView.swift; sourceTree = "<group>"; };
 		DD8FDBA72AE548D000D33525 /* StripeDetection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripeDetection.swift; sourceTree = "<group>"; };
 		DDAE77322AE66D0400CEAFC2 /* SetupChangeBoxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupChangeBoxView.swift; sourceTree = "<group>"; };
 		DDFF75822AE1558D009AFD0F /* TestStripAnalyzer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestStripAnalyzer.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -112,6 +114,7 @@
 				DDFF75992AE15D4D009AFD0F /* SetupTakePhotoView.swift */,
 				DDFF759B2AE1619A009AFD0F /* SetupProcessPhotoView.swift */,
 				DDAE77322AE66D0400CEAFC2 /* SetupChangeBoxView.swift */,
+				DD73166F2AEBF4E100DF3F4E /* SetupReferenceColorCaptureView.swift */,
 			);
 			path = Setup;
 			sourceTree = "<group>";
@@ -191,6 +194,7 @@
 			files = (
 				DDFF758A2AE1558D009AFD0F /* SetupViewController.swift in Sources */,
 				DDAE77332AE66D0400CEAFC2 /* SetupChangeBoxView.swift in Sources */,
+				DD7316702AEBF4E100DF3F4E /* SetupReferenceColorCaptureView.swift in Sources */,
 				DDFF759C2AE1619A009AFD0F /* SetupProcessPhotoView.swift in Sources */,
 				DDFF75862AE1558D009AFD0F /* AppDelegate.swift in Sources */,
 				DDFF759A2AE15D4D009AFD0F /* SetupTakePhotoView.swift in Sources */,
